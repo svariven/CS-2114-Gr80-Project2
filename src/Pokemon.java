@@ -9,12 +9,11 @@ public class Pokemon {
 	private String name;
 	private String type;
 	private boolean isFainted;
-	private int currentHealth;
-	private int maxHealth;
+	private int health;
 	private int attack;
 	private int specialAttack;
 
-	public Pokemon(String rarity, String name, String type, int maxHealth, int currentHealth, int attack, int specialAttack) {
+	public Pokemon(String rarity, String name, String type, int health, int attack, int specialAttack) {
 		if (name == null || name.trim().isEmpty())
         {
             throw new IllegalArgumentException("Pokemon name cannot be empty");
@@ -26,8 +25,9 @@ public class Pokemon {
 		if (rarity == null || rarity.trim().isEmpty()) {
 			throw new IllegalArgumentException("Pokemon rarity cannot be empty");
 		}
-		if (maxHealth <= 0) {
-			throw new IllegalArgumentException("Pokemon cannot have 0 as max health");
+		if (health < 0)
+		{
+			throw new IllegalArgumentException("Pokemon initial health cannot be <0");
 		}
 		if (attack < 0 || specialAttack < 0) {
 			throw new IllegalArgumentException("All attack values must be non-negative");
@@ -37,8 +37,7 @@ public class Pokemon {
 		this.name = name;
 		this.type = type;
 		this.isFainted = false;
-		this.maxHealth = maxHealth;
-		this.currentHealth = currentHealth;
+		this.health = health;
 		this.attack = attack;
 		this.specialAttack = specialAttack;
 	}
@@ -49,11 +48,8 @@ public class Pokemon {
 		this.rarity = newRarity;
 	}
 
-	public void setMaxHealth(int newMax) {
-		this.maxHealth = newMax;
-	}
-	public void setCurrentHealth(int newCurrent) {
-		this.currentHealth = newCurrent;
+	public void setHealth(int newHealth) {
+		this.health = newHealth;
 	}
 
 	public void setAttack(int newAttack) {
@@ -78,16 +74,12 @@ public class Pokemon {
 		return type;
 	}
 
-	public int getMaxHealth() {
-		return maxHealth;
-	}
-
 	public boolean isFainted() {
 		return isFainted;
 	}
 	
-	public int getCurrentHealth() {
-		return currentHealth;
+	public int getHealth() {
+		return health;
 	}
 	public int getAttack() {
 		return attack;
@@ -108,14 +100,15 @@ public class Pokemon {
 			throw new IllegalArgumentException("Damage cannot be negative");
 		}
 		
-		currentHealth = Math.max(0,  currentHealth - damage);
-		isFainted = currentHealth == 0;
+		health = Math.max(0,  health - damage);
+		isFainted = health == 0;
 	}
 
 	public void itemHeal(Item item) {
 		if (item.getEffect().equals("heal")) {
-			currentHealth = Math.min(maxHealth, currentHealth +30);
-			isFainted = currentHealth == 0;
+			// health = Math.min(maxHealth, currentHealth +30);
+			health += 30;
+			isFainted = health == 0;
 		}
 	}
 	public void itemBuff(Item item) {
