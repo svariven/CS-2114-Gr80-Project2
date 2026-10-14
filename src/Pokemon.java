@@ -5,7 +5,7 @@
  */
 public class Pokemon {
 
-	private int level;
+	private String rarity;
 	private String name;
 	private String type;
 	private boolean isFainted;
@@ -14,7 +14,7 @@ public class Pokemon {
 	private int attack;
 	private int specialAttack;
 
-	public Pokemon(int level, String name, String type, int maxHealth, int currentHealth, int attack, int specialAttack) {
+	public Pokemon(String rarity, String name, String type, int maxHealth, int currentHealth, int attack, int specialAttack) {
 		if (name == null || name.trim().isEmpty())
         {
             throw new IllegalArgumentException("Pokemon name cannot be empty");
@@ -23,8 +23,8 @@ public class Pokemon {
         {
             throw new IllegalArgumentException("Pokemon type cannot be empty");
         }
-		if (level <= 0) {
-			throw new IllegalArgumentException("Pokemon have a minimul level of 1");
+		if (rarity == null || rarity.trim().isEmpty()) {
+			throw new IllegalArgumentException("Pokemon rarity cannot be empty");
 		}
 		if (maxHealth <= 0) {
 			throw new IllegalArgumentException("Pokemon cannot have 0 as max health");
@@ -33,7 +33,7 @@ public class Pokemon {
 			throw new IllegalArgumentException("All attack values must be non-negative");
 		}
 		
-		this.level = level;
+		this.rarity = rarity;
 		this.name = name;
 		this.type = type;
 		this.isFainted = false;
@@ -45,8 +45,8 @@ public class Pokemon {
 
 	// Setters
 
-	public void setLevel(int newLevel) {
-		this.level = newLevel;
+	public void setRarity(String newRarity) {
+		this.rarity = newRarity;
 	}
 
 	public void setMaxHealth(int newMax) {
@@ -66,8 +66,8 @@ public class Pokemon {
 
 	// Getters
 
-	public int getLevel() {
-		return level;
+	public String getRarity() {
+		return rarity;
 	}
 
 	public String getName() {
@@ -100,9 +100,7 @@ public class Pokemon {
 	// In game action
 	
 	//Later method
-	public void levelUp() {
-		this.level += 1;
-	}
+	//public void levelUp()
 
 	//Later method
 	public void takeDamage(int damage) {
