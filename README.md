@@ -83,15 +83,14 @@ Advanced combat and local multiplayer become more realistic with each day of
 implementation. Our team will be attempting both of these stretch goals.
 
 What new tests will you need? The methods and bad-input cases the added work 
-must cover. 
+must cover.
 
-Future tests will mainly have to do with combat. As this is 
-implemented, more tests will need to be added to existing classes to keep 
-up with the growing logic. This includes things like Pokemon being able to 
-take and deal damage, reading when a Pokemon can or cannot be captured using 
-Pokeballs, and how exactly Pokemon and items will interact with each other. We 
-will also need tests for switching between players, keeping their Pokémon and 
-inventories separate, and determining the winner of a two-player battle.
+Future tests will focus on expanding our existing combat and game logic. 
+Since the Battle class has already been implemented and integrated with Game, 
+we will add more tests for Pokémon damage, Poké Ball capture conditions, and 
+interactions between Pokémon and items. We will also test local multiplayer, 
+including switching between players, keeping their Pokémon and inventories 
+separate, and determining the winner of a two-player battle.
 
 Who does what? Which team member owns each remaining item. 
 
