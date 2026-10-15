@@ -12,7 +12,9 @@ How to Compile and Run
 3. Eclipse should automatically compile the Java files when Build
 Automatically is enabled under Project.
 4. Right-click Game.java and select Run As → Java Application.
-5. Use commands like explore, catch, view, help, and quit.
+5. Use commands like explore, catch, view, fight <number> (number from
+view), help, and quit. During a fight: attack, heal (uses a Potion), catch,
+and run.
 
 How to Run Tests
 
@@ -111,5 +113,31 @@ ATTRIBUTION TABLE
 | Room Test Class    | Richard        | Implemented first, ensured good coverage with Chat GPT                                                     |
 | Game Class         | Ishaan         | Iterated and planned with Claude before implementing, verifying, and ensuring fit with existing            |
 | Game Test Class    | Ishaan         | Iterated and planned with Claude before implementing, verifying, and ensuring fit with existing            |
+| Battle Class       | Ishaan         | Iterated and planned with Claude before implementing, verifying, and ensuring fit with existing            |
+| Battle Test Class  | Ishaan         | Iterated and planned with Claude before implementing, verifying, and ensuring fit with existing            |
 | LinkedChain<T>     | Rushil         | Wrote the generic LinkedChain class with methods for adding, removing, searching, and retrieving elements. |
 
+
+## Big-O: Game and Battle
+
+p = number of Pokemon the player owns, b = number of item stacks in the bag (only Poke Balls and Potions, so b ≤ 2), t = number of commands typed.
+
+| Method | Big-O | Spec estimate | Matches? |
+|---|---|---|---|
+| `Game(Scanner, Random)` | O(1) | not given | — |
+| `main` / `run()` | O(t · p²) | O(t) | No: each command can cost up to O(p²), not O(1) |
+| `processCommandString` – matching the word | O(1) | O(n) | Better: fixed number of commands, checked with if/else |
+| ↳ `explore` | O(1) (3 rooms, `rooms.get(i)`) | — | — |
+| ↳ `catch` | O(b²) = O(1) | — | — |
+| ↳ `fight <n>` | O(p) (`getPokemon(n)`) | — | — |
+| ↳ `attack` | O(p²) (checks if all Pokemon fainted) | — | — |
+| ↳ `heal` | O(b² + p²) | — | — |
+| ↳ `view` | O(p² + b²) | — | — |
+| ↳ `run`, `help`, `quit` | O(1) | — | — |
+| `getPlayer`, `getWildPokemon`, `getCurrentRoom`, `isInBattle`, `isGameOver` | O(1) | — | — |
+| `Battle(Pokemon, Pokemon)` | O(1) | O(1) | Yes |
+| `Battle.attack` | O(1) | O(1) | Yes |
+| `Battle.isOver` | O(1) | O(1) | Yes |
+| `Battle.runTurn` | O(1) | O(1) | Yes |
+
+**Why O(p²)?** Looping over the collection with `getPokemon(i)` calls `LinkedChain.get(i)`, which walks i nodes, so 0 + 1 + … + (p−1) = O(p²). The spec assumed each command was cheap, but `view` and the game-over check both loop like this.
