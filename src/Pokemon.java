@@ -95,7 +95,7 @@ public class Pokemon {
      */
 	public void setHealth(int newHealth) {
 		if (newHealth < 0) {
-			throw new IllegalArgumentException("Pokemon initial health cannot be <0");
+			throw new IllegalArgumentException("Pokemon initial health cannot be negative");
 		}
 		this.health = newHealth;
 		this.isFainted = (newHealth == 0);
@@ -112,6 +112,7 @@ public class Pokemon {
 		if (newAttack < 0) {
 			throw new IllegalArgumentException("All attack values must be non-negative");
 		}
+
 		this.attack = newAttack;
 	}
 
