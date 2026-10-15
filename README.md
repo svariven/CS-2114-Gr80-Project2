@@ -94,10 +94,13 @@ separate, and determining the winner of a two-player battle.
 
 Who does what? Which team member owns each remaining item. 
 
-Each of us will keep working on our assigned classes. Ishaan will handle Game 
-and integrating the battle system, Rushil will work on Player and inventory, 
-Richard will work on Pokémon and Room, and Gowri will handle Item and related 
-tests. We will all help test the final game and fix any remaining issues.
+Each of us will continue working on our assigned classes. First, Richard will 
+handle any remaining Pokémon bugs and validation tests, while everyone checks 
+their existing JUnit tests. Next, Ishaan will work on integrating advanced 
+combat and local multiplayer into Game, Rushil will handle separate player 
+inventories and Pokémon collections, Richard will work on Pokémon battle 
+behavior, and Gowri will handle item interactions and related tests. Finally, 
+we will all test the completed game and fix any remaining bugs.
 
 ATTRIBUTION TABLE
 
