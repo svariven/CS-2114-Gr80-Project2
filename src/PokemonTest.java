@@ -293,4 +293,43 @@ public class PokemonTest {
         assertEquals(15, pika.getAttack());
         assertEquals(25, pika.getSpecialAttack());
     }
+    
+    @Test
+    public void testSetHealthNegative()
+    {
+        Pokemon pika = new Pokemon(
+            "common", "Pikachu", "Electric", 100, 15, 25);
+        
+        assertThrows(
+            IllegalArgumentException.class, () -> pika.setHealth(-10));
+        
+        assertEquals(100, pika.getHealth());
+            
+    }
+    
+    @Test
+    public void testSetAttackNegative()
+    {
+        Pokemon pika = new Pokemon(
+            "common", "Pikachu", "Electric", 100, 15, 25);
+        
+        assertThrows(
+            IllegalArgumentException.class, () -> pika.setAttack(-10));
+        
+        assertEquals(15, pika.getAttack());
+            
+    }
+    
+    @Test
+    public void testSetSpecialAttackNegative() {
+        Pokemon pika = new Pokemon(
+            "common", "Pikachu", "Electric", 100, 15, 25);
+
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> pika.setSpecialAttack(-10)
+        );
+
+        assertEquals(25, pika.getSpecialAttack());
+    }
 }
