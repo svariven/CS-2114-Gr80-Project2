@@ -85,11 +85,8 @@ The ones from your scope you are committing to, and the ones you are dropping.
 Advanced combat and local multiplayer become more realistic with each day of 
 implementation. Our team will be attempting both of these stretch goals.
 What new tests will you need? The methods and bad-input cases the added work 
-must cover. Future tests will mainly have to do with combat. As this is 
-implemented, more tests will need to be added to existing classes to keep 
-up with the growing logic. This includes things like pokemon being able to 
-take and deal damage, reading when a pokemon can or cannot be captured using 
-pokeballs, and how exactly pokemon and items will interact with each other.
+must cover. Future tests will mainly have to do with combat but not the Battle class itself. The Battle class has been implemented and Game works properly alongside it, this means more tests will be need to be added to existing classes to keep 
+up with the growing logic. This includes things like pokeballs (which will extend off of item) knowing when a pokemon can or can't be captured.
 
 Who does what? 
 

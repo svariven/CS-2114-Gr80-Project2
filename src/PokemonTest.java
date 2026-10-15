@@ -29,6 +29,7 @@ public class PokemonTest {
 		}
 	}
 	
+	@Test
 	public void testNullName() {
 		try {
 		Pokemon pika = new Pokemon("common", null, "Electric", 100, 15, 25);
