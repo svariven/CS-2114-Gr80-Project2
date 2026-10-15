@@ -37,7 +37,8 @@ public class Battle
     private boolean secondUsedSpecial;
 
     /**
-     * Creates a battle. The first Pokemon attacks first each turn. O(1).
+     * Creates a battle. The first Pokemon attacks first each turn.
+     * Time Complexity: O(1)
      *
      * @param first the Pokemon that attacks first
      * @param second the Pokemon that attacks second
@@ -62,7 +63,8 @@ public class Battle
     /**
      * Has the attacker hit the defender once with its attack stat. A
      * fainted attacker cannot attack. Uses up one turn of the attacker's
-     * boost. O(1).
+     * boost.
+     * Time Complexity: O(1)
      *
      * @param attacker the Pokemon attacking
      * @param defender the Pokemon taking damage
@@ -84,7 +86,8 @@ public class Battle
     /**
      * Has the attacker hit the defender with its special attack stat, for
      * SPECIAL_MULTIPLIER times normal damage. Each Pokemon can do this once
-     * per battle. O(1).
+     * per battle.
+     * Time Complexity: O(1)
      *
      * @param attacker the Pokemon attacking
      * @param defender the Pokemon taking damage
@@ -116,7 +119,8 @@ public class Battle
 
     /**
      * Support move: raises the Pokemon's attack by BOOST_AMOUNT for its
-     * next BOOST_TURNS attacks. A boost cannot be stacked. O(1).
+     * next BOOST_TURNS attacks. A boost cannot be stacked.
+     * Time Complexity: O(1)
      *
      * @param pokemon the Pokemon to boost
      * @return true if boosted, false if it has fainted or is already boosted
@@ -142,7 +146,8 @@ public class Battle
     }
 
     /**
-     * Returns how many more attacks the Pokemon's boost lasts. O(1).
+     * Returns how many more attacks the Pokemon's boost lasts.
+     * Time Complexity: O(1)
      *
      * @param pokemon a Pokemon in this battle
      * @return the turns left, 0 if not boosted
@@ -159,7 +164,8 @@ public class Battle
     }
 
     /**
-     * Tells whether the Pokemon already used its special attack. O(1).
+     * Tells whether the Pokemon already used its special attack.
+     * Time Complexity: O(1)
      *
      * @param pokemon a Pokemon in this battle
      * @return true if it has been used this battle
@@ -176,7 +182,8 @@ public class Battle
     }
 
     /**
-     * Tells whether either Pokemon has fainted. O(1).
+     * Tells whether either Pokemon has fainted.
+     * Time Complexity: O(1)
      *
      * @return true if the battle is over
      */
@@ -188,7 +195,8 @@ public class Battle
     /**
      * Runs one turn: the first Pokemon attacks, then the second attacks
      * back if it is still standing. Does nothing once the battle is over.
-     * O(1).
+     *
+     * Time Complexity: O(1)
      */
     public void runTurn()
     {
@@ -204,17 +212,26 @@ public class Battle
         }
     }
 
+    /**
+     * Returns the Pokemon that attacks first.
+     * Time Complexity: O(1)
+     */
     public Pokemon getFirst()
     {
         return first;
     }
 
+    /**
+     * Returns the Pokemon that attacks second.
+     * Time Complexity: O(1)
+     */
     public Pokemon getSecond()
     {
         return second;
     }
 
     // Damage from a stat plus any boost, at least 1
+    // Time Complexity: O(1)
     private int damageFrom(Pokemon attacker, int stat)
     {
         if (getBoostTurns(attacker) > 0)
@@ -225,6 +242,7 @@ public class Battle
     }
 
     // Deals the damage and uses up one turn of the attacker's boost
+    // Time Complexity: O(1)
     private int hit(Pokemon attacker, Pokemon defender, int damage)
     {
         defender.takeDamage(damage);
@@ -239,6 +257,7 @@ public class Battle
         return damage;
     }
 
+    // Time Complexity: O(1)
     private void checkSides(Pokemon attacker, Pokemon defender)
     {
         checkInBattle(attacker);
@@ -250,6 +269,7 @@ public class Battle
         }
     }
 
+    // Time Complexity: O(1)
     private void checkInBattle(Pokemon pokemon)
     {
         if (pokemon == null || (pokemon != first && pokemon != second))

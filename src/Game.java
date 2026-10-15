@@ -20,8 +20,11 @@ import java.util.Scanner;
  * Player, Pokemon, Room and Battle classes. The game is either exploring
  * (battle is null) or in a battle (battle is not null).
  *
- * Big-O below uses p = number of Pokemon the player owns and b = number of
- * item stacks in the bag (b is at most 3 here, so b terms are really O(1)).
+ * Time complexities below use p = number of Pokemon the player owns,
+ * b = number of item stacks in the bag (at most 3: Poke Balls, Potions and
+ * X Attacks, so b terms are really O(1)), and t = number of commands typed.
+ * Looping over the collection with getPokemon(i) is O(p^2), because
+ * LinkedChain.get(i) walks i nodes each time: 0 + 1 + ... + (p - 1).
  */
 public class Game {
 
@@ -53,13 +56,18 @@ public class Game {
     private Scanner input;
     private Random random;
 
+    /**
+     * Creates a game that reads from the keyboard.
+     * Time Complexity: O(1)
+     */
     public Game()
     {
         this(new Scanner(System.in), new Random());
     }
 
     /**
-     * Sets up the player, starter Pokemon, bag and map. O(1).
+     * Sets up the player, starter Pokemon, bag and map.
+     * Time Complexity: O(1), a fixed number of adds (3 items, 3 rooms)
      *
      * @param input where commands are read from
      * @param random used to pick rooms and wild Pokemon
@@ -93,7 +101,9 @@ public class Game {
     }
 
     /**
-     * Starts the game. O(t * p^2) where t is the number of commands typed.
+     * Starts the game.
+     * Time Complexity: O(t * p^2), same as run(). The spec estimated O(t);
+     * it is higher because a single command can cost O(p^2).
      */
     public static void main(String[] args)
     {
@@ -102,7 +112,8 @@ public class Game {
 
     /**
      * Reads and runs commands until the game ends or input runs out.
-     * O(t * p^2): t commands, each at most O(p^2) (see processCommandString).
+     * Time Complexity: O(t * p^2), t commands that each cost at most O(p^2)
+     * (see processCommandString). The spec estimated O(t).
      */
     public void run()
     {
@@ -120,12 +131,12 @@ public class Game {
 
     /**
      * Runs one command. Bad commands print a message and never crash.
-     * Matching the command word is O(1) (a fixed number of commands); the
-     * work after that depends on the command:
-     * explore O(1) (3 rooms), catch O(b^2), fight O(p), attack O(p^2),
+     * Time Complexity: O(p^2) worst case. Matching the command word is
+     * O(1) (a fixed number of if/else checks; the spec estimated O(n) for
+     * searching a command list). The work after that depends on the
+     * command: explore O(1), catch O(b^2), fight O(p), attack O(p^2),
      * special/buff O(p^2), heal/power O(b^2 + p^2), view O(p^2 + b^2),
      * run/help/quit O(1).
-     * The p^2 comes from looping get(i), which is O(i) in a linked chain.
      *
      * @param command what the user typed
      */
@@ -200,32 +211,53 @@ public class Game {
         }
     }
 
+    /**
+     * Returns the player.
+     * Time Complexity: O(1)
+     */
     public Player getPlayer()
     {
         return player;
     }
 
+    /**
+     * Returns the wild Pokemon being faced, or null if there is none.
+     * Time Complexity: O(1)
+     */
     public Pokemon getWildPokemon()
     {
         return wildPokemon;
     }
 
+    /**
+     * Returns the room the player is in, or null before the first explore.
+     * Time Complexity: O(1)
+     */
     public Room getCurrentRoom()
     {
         return currentRoom;
     }
 
+    /**
+     * Tells whether a fight is going on.
+     * Time Complexity: O(1)
+     */
     public boolean isInBattle()
     {
         return battle != null;
     }
 
+    /**
+     * Tells whether the game has ended.
+     * Time Complexity: O(1)
+     */
     public boolean isGameOver()
     {
         return gameOver;
     }
 
     // Moves to a random room and shows a random wild Pokemon there
+    // Time Complexity: O(1): rooms.get(i) on 3 rooms
     private void explore()
     {
         if (isInBattle())
@@ -248,6 +280,7 @@ public class Game {
 
     // Uses one Poke Ball and adds the wild Pokemon to the collection.
     // Works while exploring or during a fight (it ends the fight).
+    // Time Complexity: O(b^2): useItem searches the bag with get(i)
     private void catchPokemon()
     {
         if (wildPokemon == null)
@@ -270,6 +303,7 @@ public class Game {
 
     // Starts a battle between the chosen Pokemon (number from view) and
     // the wild Pokemon
+    // Time Complexity: O(p): getPokemon(n) walks the chain
     private void fight(String target)
     {
         if (isInBattle())
@@ -312,6 +346,7 @@ public class Game {
     }
 
     // One turn: your Pokemon attacks, then the wild Pokemon attacks back
+    // Time Complexity: O(p^2): the game-over check
     private void attack()
     {
         if (!isInBattle())
@@ -326,6 +361,7 @@ public class Game {
     }
 
     // Special attack (once per fight), then the wild Pokemon attacks back
+    // Time Complexity: O(p^2): the game-over check
     private void special()
     {
         if (!isInBattle())
@@ -348,6 +384,7 @@ public class Game {
 
     // Support move: boosts your Pokemon's attack for a few turns, then the
     // wild Pokemon attacks
+    // Time Complexity: O(p^2): the game-over check
     private void buff()
     {
         if (!isInBattle())
@@ -369,6 +406,7 @@ public class Game {
     }
 
     // Uses a Potion on your Pokemon, then the wild Pokemon attacks
+    // Time Complexity: O(b^2 + p^2): useItem plus the game-over check
     private void heal()
     {
         if (!isInBattle())
@@ -391,6 +429,7 @@ public class Game {
 
     // Uses an X Attack: raises your Pokemon's attack for good, then the
     // wild Pokemon attacks
+    // Time Complexity: O(b^2 + p^2): useItem plus the game-over check
     private void power()
     {
         if (!isInBattle())
@@ -412,6 +451,7 @@ public class Game {
     }
 
     // The wild Pokemon attacks back (if it is still standing)
+    // Time Complexity: O(p^2): the game-over check
     private void wildTurn()
     {
         battle.attack(wildPokemon, fighter);
@@ -419,6 +459,7 @@ public class Game {
         checkBattleOver();
     }
 
+    // Time Complexity: O(1)
     private void runAway()
     {
         if (!isInBattle())
@@ -432,6 +473,7 @@ public class Game {
         endBattle();
     }
 
+    // Time Complexity: O(1)
     private void printBattleStatus()
     {
         String boost = "";
@@ -446,6 +488,7 @@ public class Game {
 
     // Ends the battle if someone fainted, and ends the game if all of the
     // player's Pokemon have fainted
+    // Time Complexity: O(p^2): allFainted
     private void checkBattleOver()
     {
         if (wildPokemon.isFainted())
@@ -472,13 +515,14 @@ public class Game {
         }
     }
 
+    // Time Complexity: O(1)
     private void endBattle()
     {
         battle = null;
         fighter = null;
     }
 
-    // O(p^2): get(i) walks the chain each time
+    // Time Complexity: O(p^2), getPokemon(i) walks the chain each time
     private boolean allFainted()
     {
         for (int i = 0; i < player.getPokemonCount(); i++)
@@ -492,6 +536,7 @@ public class Game {
     }
 
     // Turns "1", "2", ... into a Pokemon, or null if it is not a valid number
+    // Time Complexity: O(p): getPokemon(n) walks the chain
     private Pokemon pickPokemon(String target)
     {
         int number;
@@ -512,6 +557,7 @@ public class Game {
     }
 
     // Shows the player's numbered Pokemon and what is left in the bag
+    // Time Complexity: O(p^2 + b^2): getPokemon(i) in a loop, then getItemAmount
     private void view()
     {
         System.out.println("Your Pokemon:");
@@ -532,6 +578,7 @@ public class Game {
         System.out.println("X Attacks left: " + player.getItemAmount(X_ATTACK));
     }
 
+    // Time Complexity: O(1)
     private void printHelp()
     {
         if (isInBattle())
