@@ -1,4 +1,17 @@
 import static org.junit.Assert.*;
+//As a Hokie, I will conduct myself with honor and integrity at all times.
+//I will not lie, cheat, or steal, nor will I
+//accept the actions of those who do.
+//-- Richard Samson (skye25)
+
+//LLM Statement:
+//
+//During the preparation of this assignment, I, Richard Samson used Chat GPT
+//for designing and programming the Room test class.
+//After using this tool, I reviewed and edited the content as needed
+//to ensure its accuracy and take full responsibility for the content in
+//relation to grading. I understand that I am responsible for being able to
+//complete this work without the use of assistance.
 
 import org.junit.Before;
 import org.junit.Test;
@@ -104,4 +117,42 @@ public class RoomTest {
         assertTrue(result.contains("Pikachu"));
     }
 
+    @Test
+    public void testnullRoomName() {
+    	try {
+    	room.setName(null);
+    	fail("Expected Illegal Argument Exception");
+    	}
+    	catch(IllegalArgumentException e) {
+    	}
+    }
+    
+    @Test
+    public void testEmptyRoomName() {
+    	try {
+    	room.setName("");
+    	fail("Expected Illegal Argument Exception");
+    	}
+    	catch(IllegalArgumentException e) {
+    	}
+    }
+    @Test
+    public void testnullRoomDesc() {
+    	try {
+    	room.setDescription(null);
+    	fail("Expected Illegal Argument Exception");
+    	}
+    	catch(IllegalArgumentException e) {
+    	}
+    }
+    
+    @Test
+    public void testEmptyRoomDesc() {
+    	try {
+    	room.setDescription("");
+    	fail("Expected Illegal Argument Exception");
+    	}
+    	catch(IllegalArgumentException e) {
+    	}
+    }
 }
