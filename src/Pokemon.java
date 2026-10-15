@@ -14,25 +14,22 @@ public class Pokemon {
 	private int specialAttack;
 
 	public Pokemon(String rarity, String name, String type, int health, int attack, int specialAttack) {
-		if (name == null || name.trim().isEmpty())
-        {
-            throw new IllegalArgumentException("Pokemon name cannot be empty");
-        }
-		if (type == null || type.trim().isEmpty())
-        {
-            throw new IllegalArgumentException("Pokemon type cannot be empty");
-        }
+		if (name == null || name.trim().isEmpty()) {
+			throw new IllegalArgumentException("Pokemon name cannot be empty");
+		}
+		if (type == null || type.trim().isEmpty()) {
+			throw new IllegalArgumentException("Pokemon type cannot be empty");
+		}
 		if (rarity == null || rarity.trim().isEmpty()) {
 			throw new IllegalArgumentException("Pokemon rarity cannot be empty");
 		}
-		if (health < 0)
-		{
+		if (health < 0) {
 			throw new IllegalArgumentException("Pokemon initial health cannot be <0");
 		}
 		if (attack < 0 || specialAttack < 0) {
 			throw new IllegalArgumentException("All attack values must be non-negative");
 		}
-		
+
 		this.rarity = rarity;
 		this.name = name;
 		this.type = type;
@@ -77,10 +74,11 @@ public class Pokemon {
 	public boolean isFainted() {
 		return isFainted;
 	}
-	
+
 	public int getHealth() {
 		return health;
 	}
+
 	public int getAttack() {
 		return attack;
 	}
@@ -90,17 +88,17 @@ public class Pokemon {
 	}
 
 	// In game action
-	
-	//Later method
-	//public void levelUp()
 
-	//Later method
+	// Later method
+	// public void levelUp()
+
+	// Later method
 	public void takeDamage(int damage) {
-		if( damage < 0) {
+		if (damage < 0) {
 			throw new IllegalArgumentException("Damage cannot be negative");
 		}
-		
-		health = Math.max(0,  health - damage);
+
+		health = Math.max(0, health - damage);
 		isFainted = health == 0;
 	}
 
@@ -111,10 +109,17 @@ public class Pokemon {
 			isFainted = health == 0;
 		}
 	}
+
 	public void itemBuff(Item item) {
 		if (item.getEffect().equals("buff")) {
 			this.attack += 15;
 			this.specialAttack += 10;
 		}
+	}
+	
+	@Override
+	public String toString()
+	{
+		return name + "[Rarity: " + rarity + "]" + type + " type, HP: " + health;
 	}
 }

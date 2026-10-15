@@ -158,7 +158,11 @@ public class PokemonTest {
 		Pokemon pika = new Pokemon("common", "Pikachu", "Electric", 100, 15, 25);
 		pika.takeDamage(100);
 		assertTrue(pika.isFainted());
-
 	}
 
+	@Test
+	public void testPokemonToString() {
+		Pokemon pika = new Pokemon("common", "Pikachu", "Electric", 100, 15, 25);
+		assertTrue(pika.toString().contains("Pikachu"));
+	}
 }

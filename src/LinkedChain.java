@@ -171,4 +171,20 @@ public class LinkedChain<T>
             this.next = next;
         }
     }
+    @Override
+    public String toString() {
+        StringBuilder result = new StringBuilder("[");
+        Node<T> current = head; 
+
+        while (current != null) {
+            result.append(current.data);
+            if (current.next != null) {
+                result.append(" -> ");
+            }
+            current = current.next;
+        }
+        
+        result.append("]");
+        return result.toString();
+    }
 }
