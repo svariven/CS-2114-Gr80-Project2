@@ -111,6 +111,43 @@ public class PokemonTest {
 	}
 	
 	@Test
+	public void testSetNegativeAttackFails() {
+		try {
+		Pokemon pika = new Pokemon("common", "Pikachu", "Electric", 100, 15, 25);
+		pika.setAttack(-5);
+		}
+		catch(IllegalArgumentException e) {
+		}
+		Pokemon pika = new Pokemon("common", "Pikachu", "Electric", 100, 15, 25);
+		assertTrue(pika.getAttack() == 15);
+	}
+	
+	@Test
+	public void testSetNegativeSpecialAttackFails() {
+		try {
+		Pokemon pika = new Pokemon("common", "Pikachu", "Electric", 100, 15, 25);
+		pika.setSpecialAttack(-5);
+		}
+		catch(IllegalArgumentException e) {
+		}
+		Pokemon pika = new Pokemon("common", "Pikachu", "Electric", 100, 15, 25);
+		assertTrue(pika.getSpecialAttack() == 25);
+	}
+	
+	@Test
+	public void testSetNegativeHealthFails() {
+		try {
+		Pokemon pika = new Pokemon("common", "Pikachu", "Electric", 100, 15, 25);
+		pika.setHealth(-5);
+		}
+		catch(IllegalArgumentException e) {
+		}
+		Pokemon pika = new Pokemon("common", "Pikachu", "Electric", 100, 15, 25);
+		assertTrue(pika.getHealth() == 100);
+	}
+	
+	
+	@Test
 	public void testNegativeSpecialAttack() {
 		try {
 			Pokemon pika = new Pokemon("common", "Pikachu", "Electric", 100, 15, -25);

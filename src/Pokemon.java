@@ -94,13 +94,11 @@ public class Pokemon {
      * Time complexity: O(1).
      */
 	public void setHealth(int newHealth) {
-		if (health < 0) {
+		if (newHealth < 0) {
 			throw new IllegalArgumentException("Pokemon initial health cannot be <0");
 		}
-		if (health == 0) {
-			isFainted = true;
-		}
 		this.health = newHealth;
+		this.isFainted = (newHealth == 0);
 	}
 	
 	/**
@@ -111,10 +109,10 @@ public class Pokemon {
      * Time complexity: O(1).
      */
 	public void setAttack(int newAttack) {
-		this.attack = newAttack;
-		if (attack < 0) {
+		if (newAttack < 0) {
 			throw new IllegalArgumentException("All attack values must be non-negative");
 		}
+		this.attack = newAttack;
 	}
 
 	/**
@@ -125,7 +123,7 @@ public class Pokemon {
      * Time complexity: O(1).
      */
 	public void setSpecialAttack(int newSpecial) {
-		if (specialAttack < 0) {
+		if (newSpecial < 0) {
 			throw new IllegalArgumentException("All attack values must be non-negative");
 		}
 		this.specialAttack = newSpecial;
