@@ -62,6 +62,7 @@ public class GameTest
         assertEquals(1, game.getPlayer().getPokemonCount());
         assertEquals(5, game.getPlayer().getItemAmount(Game.POKE_BALL));
         assertEquals(2, game.getPlayer().getItemAmount(Game.POTION));
+        assertEquals(1, game.getPlayer().getItemAmount(Game.X_ATTACK));
         assertNull(game.getWildPokemon());
         assertNull(game.getCurrentRoom());
         assertFalse(game.isInBattle());
@@ -178,6 +179,7 @@ public class GameTest
         assertTrue(out().contains("1. Pikachu (Type: Electric, HP: 35, Attack: 55)"));
         assertTrue(out().contains("Poke Balls left: 5"));
         assertTrue(out().contains("Potions left: 2"));
+        assertTrue(out().contains("X Attacks left: 1"));
     }
 
     @Test
@@ -397,6 +399,104 @@ public class GameTest
         assertTrue(out().contains("You can only heal during a fight."));
     }
 
+    // ---------- processCommandString: special ----------
+
+    @Test
+    public void testSpecialDealsDoubleDamage()
+    {
+        startFight();
+        Pokemon wild = game.getWildPokemon();
+        int wildHp = wild.getHealth();
+        game.processCommandString("special");
+
+        int damage = Battle.SPECIAL_MULTIPLIER * (50 / Battle.DAMAGE_DIVISOR);
+        assertEquals(wildHp - damage, wild.getHealth());
+        assertTrue(out().contains("Pikachu used its special attack for "
+            + damage + " damage!"));
+    }
+
+    @Test
+    public void testSpecialOnlyOncePerFight()
+    {
+        startFight();
+        game.processCommandString("special");
+        int wildHp = game.getWildPokemon().getHealth();
+        game.processCommandString("special");
+
+        assertEquals(wildHp, game.getWildPokemon().getHealth());
+        assertTrue(out().contains(
+            "You cannot use Pikachu's special attack again this fight."));
+    }
+
+    @Test
+    public void testSpecialOutsideFight()
+    {
+        game.processCommandString("special");
+        assertTrue(out().contains("Special attack what? Type fight and a number first."));
+    }
+
+    // ---------- processCommandString: buff ----------
+
+    @Test
+    public void testBuffMakesNextAttackStronger()
+    {
+        startFight();
+        game.processCommandString("buff");
+        assertTrue(out().contains("Pikachu powered up!"));
+
+        Pokemon wild = game.getWildPokemon();
+        int wildHp = wild.getHealth();
+        game.processCommandString("attack");
+        int boosted = (55 + Battle.BOOST_AMOUNT) / Battle.DAMAGE_DIVISOR;
+        assertEquals(wildHp - boosted, wild.getHealth());
+    }
+
+    @Test
+    public void testBuffTwiceIsRejected()
+    {
+        startFight();
+        game.processCommandString("buff");
+        game.processCommandString("buff");
+        assertTrue(out().contains("You cannot buff Pikachu. It is already powered up."));
+    }
+
+    @Test
+    public void testBuffOutsideFight()
+    {
+        game.processCommandString("buff");
+        assertTrue(out().contains("You can only buff during a fight."));
+    }
+
+    // ---------- processCommandString: power ----------
+
+    @Test
+    public void testPowerUsesXAttack()
+    {
+        startFight();
+        game.processCommandString("power");
+        assertEquals(0, game.getPlayer().getItemAmount(Game.X_ATTACK));
+        assertEquals(70, game.getPlayer().getPokemon(0).getAttack());
+        assertTrue(out().contains("Pikachu's attack rose to 70!"));
+    }
+
+    @Test
+    public void testPowerWithNoneLeft()
+    {
+        startFight();
+        game.processCommandString("power");
+        game.processCommandString("power");
+        assertEquals(70, game.getPlayer().getPokemon(0).getAttack());
+        assertTrue(out().contains("You're out of X Attacks!"));
+    }
+
+    @Test
+    public void testPowerOutsideFight()
+    {
+        game.processCommandString("power");
+        assertEquals(1, game.getPlayer().getItemAmount(Game.X_ATTACK));
+        assertTrue(out().contains("You can only use an X Attack during a fight."));
+    }
+
     // ---------- processCommandString: run, catch during a fight ----------
 
     @Test
@@ -430,7 +530,7 @@ public class GameTest
     {
         startFight();
         game.processCommandString("help");
-        assertTrue(out().contains("Battle commands: attack, heal, catch, run"));
+        assertTrue(out().contains("Battle commands: attack, special, buff, heal, power, catch, run"));
     }
 
     // ---------- run ----------

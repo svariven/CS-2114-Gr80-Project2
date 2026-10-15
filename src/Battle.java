@@ -14,24 +14,35 @@
 
 /**
  * Runs one turn-based fight between two Pokemon until one reaches 0 HP.
- * Battle only changes the two Pokemon's health; Game decides what happens
- * when the fight is over.
+ * Battle only changes the two Pokemon's health and keeps track of
+ * fight-only effects (boosts and special attacks); Game decides what
+ * happens when the fight is over.
  */
 public class Battle
 {
     // Damage dealt is the attacker's attack divided by this, so fights last
     // a few turns instead of ending in one hit
     public static final int DAMAGE_DIVISOR = 4;
+    // A special attack does this many times normal damage
+    public static final int SPECIAL_MULTIPLIER = 2;
+    // A boost adds this much attack for the next BOOST_TURNS attacks
+    public static final int BOOST_AMOUNT = 20;
+    public static final int BOOST_TURNS = 3;
 
     private Pokemon first;
     private Pokemon second;
+    private int firstBoostTurns;
+    private int secondBoostTurns;
+    private boolean firstUsedSpecial;
+    private boolean secondUsedSpecial;
 
     /**
      * Creates a battle. The first Pokemon attacks first each turn. O(1).
      *
      * @param first the Pokemon that attacks first
      * @param second the Pokemon that attacks second
-     * @throws IllegalArgumentException if either Pokemon is null
+     * @throws IllegalArgumentException if either Pokemon is null or both
+     *         are the same Pokemon
      */
     public Battle(Pokemon first, Pokemon second)
     {
@@ -39,38 +50,129 @@ public class Battle
         {
             throw new IllegalArgumentException("A battle needs two Pokemon");
         }
+        if (first == second)
+        {
+            throw new IllegalArgumentException("A Pokemon cannot fight itself");
+        }
 
         this.first = first;
         this.second = second;
     }
 
     /**
-     * Has the attacker hit the defender once. A fainted attacker cannot
-     * attack. O(1).
+     * Has the attacker hit the defender once with its attack stat. A
+     * fainted attacker cannot attack. Uses up one turn of the attacker's
+     * boost. O(1).
      *
      * @param attacker the Pokemon attacking
      * @param defender the Pokemon taking damage
      * @return the damage dealt, or 0 if the attacker has fainted
-     * @throws IllegalArgumentException if either Pokemon is not in this
-     *         battle or both are the same Pokemon
+     * @throws IllegalArgumentException if the two are not on opposite sides
+     *         of this battle
      */
     public int attack(Pokemon attacker, Pokemon defender)
     {
-        if (!isInBattle(attacker) || !isInBattle(defender)
-            || attacker == defender)
-        {
-            throw new IllegalArgumentException(
-                "Both Pokemon must be on opposite sides of this battle");
-        }
-
+        checkSides(attacker, defender);
         if (attacker.isFainted())
         {
             return 0;
         }
 
-        int damage = Math.max(1, attacker.getAttack() / DAMAGE_DIVISOR);
-        defender.takeDamage(damage);
-        return damage;
+        return hit(attacker, defender, damageFrom(attacker, attacker.getAttack()));
+    }
+
+    /**
+     * Has the attacker hit the defender with its special attack stat, for
+     * SPECIAL_MULTIPLIER times normal damage. Each Pokemon can do this once
+     * per battle. O(1).
+     *
+     * @param attacker the Pokemon attacking
+     * @param defender the Pokemon taking damage
+     * @return the damage dealt, or 0 if the attacker has fainted or already
+     *         used its special attack
+     * @throws IllegalArgumentException if the two are not on opposite sides
+     *         of this battle
+     */
+    public int specialAttack(Pokemon attacker, Pokemon defender)
+    {
+        checkSides(attacker, defender);
+        if (attacker.isFainted() || hasUsedSpecial(attacker))
+        {
+            return 0;
+        }
+
+        if (attacker == first)
+        {
+            firstUsedSpecial = true;
+        }
+        else
+        {
+            secondUsedSpecial = true;
+        }
+        int damage = SPECIAL_MULTIPLIER
+            * damageFrom(attacker, attacker.getSpecialAttack());
+        return hit(attacker, defender, damage);
+    }
+
+    /**
+     * Support move: raises the Pokemon's attack by BOOST_AMOUNT for its
+     * next BOOST_TURNS attacks. A boost cannot be stacked. O(1).
+     *
+     * @param pokemon the Pokemon to boost
+     * @return true if boosted, false if it has fainted or is already boosted
+     * @throws IllegalArgumentException if the Pokemon is not in this battle
+     */
+    public boolean boost(Pokemon pokemon)
+    {
+        checkInBattle(pokemon);
+        if (pokemon.isFainted() || getBoostTurns(pokemon) > 0)
+        {
+            return false;
+        }
+
+        if (pokemon == first)
+        {
+            firstBoostTurns = BOOST_TURNS;
+        }
+        else
+        {
+            secondBoostTurns = BOOST_TURNS;
+        }
+        return true;
+    }
+
+    /**
+     * Returns how many more attacks the Pokemon's boost lasts. O(1).
+     *
+     * @param pokemon a Pokemon in this battle
+     * @return the turns left, 0 if not boosted
+     * @throws IllegalArgumentException if the Pokemon is not in this battle
+     */
+    public int getBoostTurns(Pokemon pokemon)
+    {
+        checkInBattle(pokemon);
+        if (pokemon == first)
+        {
+            return firstBoostTurns;
+        }
+        return secondBoostTurns;
+    }
+
+    /**
+     * Tells whether the Pokemon already used its special attack. O(1).
+     *
+     * @param pokemon a Pokemon in this battle
+     * @return true if it has been used this battle
+     * @throws IllegalArgumentException if the Pokemon is not in this battle
+     */
+    public boolean hasUsedSpecial(Pokemon pokemon)
+    {
+        checkInBattle(pokemon);
+        if (pokemon == first)
+        {
+            return firstUsedSpecial;
+        }
+        return secondUsedSpecial;
     }
 
     /**
@@ -112,8 +214,47 @@ public class Battle
         return second;
     }
 
-    private boolean isInBattle(Pokemon pokemon)
+    // Damage from a stat plus any boost, at least 1
+    private int damageFrom(Pokemon attacker, int stat)
     {
-        return pokemon != null && (pokemon == first || pokemon == second);
+        if (getBoostTurns(attacker) > 0)
+        {
+            stat += BOOST_AMOUNT;
+        }
+        return Math.max(1, stat / DAMAGE_DIVISOR);
+    }
+
+    // Deals the damage and uses up one turn of the attacker's boost
+    private int hit(Pokemon attacker, Pokemon defender, int damage)
+    {
+        defender.takeDamage(damage);
+        if (attacker == first && firstBoostTurns > 0)
+        {
+            firstBoostTurns--;
+        }
+        else if (attacker == second && secondBoostTurns > 0)
+        {
+            secondBoostTurns--;
+        }
+        return damage;
+    }
+
+    private void checkSides(Pokemon attacker, Pokemon defender)
+    {
+        checkInBattle(attacker);
+        checkInBattle(defender);
+        if (attacker == defender)
+        {
+            throw new IllegalArgumentException(
+                "Attacker and defender must be on opposite sides");
+        }
+    }
+
+    private void checkInBattle(Pokemon pokemon)
+    {
+        if (pokemon == null || (pokemon != first && pokemon != second))
+        {
+            throw new IllegalArgumentException("That Pokemon is not in this battle");
+        }
     }
 }

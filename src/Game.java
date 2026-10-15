@@ -21,14 +21,19 @@ import java.util.Scanner;
  * (battle is null) or in a battle (battle is not null).
  *
  * Big-O below uses p = number of Pokemon the player owns and b = number of
- * item stacks in the bag (b is at most 2 here, so b terms are really O(1)).
+ * item stacks in the bag (b is at most 3 here, so b terms are really O(1)).
  */
 public class Game {
 
     public static final String POKE_BALL = "Poke Ball";
     public static final String POTION = "Potion";
+    public static final String X_ATTACK = "X Attack";
     public static final int STARTING_BALLS = 5;
     public static final int STARTING_POTIONS = 2;
+    public static final int STARTING_X_ATTACKS = 1;
+
+    private static final String BATTLE_HINT =
+        "Type attack, special, buff, heal, power, catch or run.";
 
     // The fixed list of wild Pokemon that "explore" picks from
     private static final String[] WILD_NAMES =
@@ -73,6 +78,7 @@ public class Game {
         player.addPokemon(new Pokemon("common", "Pikachu", "Electric", 35, 55, 50));
         player.addItem(new Item(POKE_BALL, "catch", STARTING_BALLS));
         player.addItem(new Item(POTION, "heal", STARTING_POTIONS));
+        player.addItem(new Item(X_ATTACK, "buff", STARTING_X_ATTACKS));
 
         rooms = new LinkedChain<Room>();
         rooms.add(new Room("Forest", "Tall trees block out most of the sun."));
@@ -117,7 +123,8 @@ public class Game {
      * Matching the command word is O(1) (a fixed number of commands); the
      * work after that depends on the command:
      * explore O(1) (3 rooms), catch O(b^2), fight O(p), attack O(p^2),
-     * heal O(b^2 + p^2), view O(p^2 + b^2), run/help/quit O(1).
+     * special/buff O(p^2), heal/power O(b^2 + p^2), view O(p^2 + b^2),
+     * run/help/quit O(1).
      * The p^2 comes from looping get(i), which is O(i) in a linked chain.
      *
      * @param command what the user typed
@@ -158,9 +165,21 @@ public class Game {
         {
             attack();
         }
+        else if (word.equals("special"))
+        {
+            special();
+        }
+        else if (word.equals("buff"))
+        {
+            buff();
+        }
         else if (word.equals("heal"))
         {
             heal();
+        }
+        else if (word.equals("power"))
+        {
+            power();
         }
         else if (word.equals("run"))
         {
@@ -212,7 +231,7 @@ public class Game {
         if (isInBattle())
         {
             System.out.println("You cannot explore during a fight. "
-                + "Type attack, heal, catch or run.");
+                + BATTLE_HINT);
             return;
         }
 
@@ -255,8 +274,7 @@ public class Game {
     {
         if (isInBattle())
         {
-            System.out.println("You are already fighting. "
-                + "Type attack, heal, catch or run.");
+            System.out.println("You are already fighting. " + BATTLE_HINT);
             return;
         }
         if (wildPokemon == null)
@@ -290,7 +308,7 @@ public class Game {
         System.out.println(fighter.getName() + ", I choose you! "
             + fighter.getName() + " (HP: " + fighter.getHealth() + ") vs "
             + wildPokemon.getName() + " (HP: " + wildPokemon.getHealth() + ")");
-        System.out.println("Type attack, heal, catch or run.");
+        System.out.println(BATTLE_HINT);
     }
 
     // One turn: your Pokemon attacks, then the wild Pokemon attacks back
@@ -305,6 +323,49 @@ public class Game {
         battle.runTurn();
         printBattleStatus();
         checkBattleOver();
+    }
+
+    // Special attack (once per fight), then the wild Pokemon attacks back
+    private void special()
+    {
+        if (!isInBattle())
+        {
+            System.out.println("Special attack what? Type fight and a number first.");
+            return;
+        }
+        if (battle.hasUsedSpecial(fighter))
+        {
+            System.out.println("You cannot use " + fighter.getName()
+                + "'s special attack again this fight.");
+            return;
+        }
+
+        int damage = battle.specialAttack(fighter, wildPokemon);
+        System.out.println(fighter.getName() + " used its special attack for "
+            + damage + " damage!");
+        wildTurn();
+    }
+
+    // Support move: boosts your Pokemon's attack for a few turns, then the
+    // wild Pokemon attacks
+    private void buff()
+    {
+        if (!isInBattle())
+        {
+            System.out.println("You can only buff during a fight.");
+            return;
+        }
+        if (!battle.boost(fighter))
+        {
+            System.out.println("You cannot buff " + fighter.getName()
+                + ". It is already powered up.");
+            return;
+        }
+
+        System.out.println(fighter.getName() + " powered up! Attack +"
+            + Battle.BOOST_AMOUNT + " for its next " + Battle.BOOST_TURNS
+            + " attacks.");
+        wildTurn();
     }
 
     // Uses a Potion on your Pokemon, then the wild Pokemon attacks
@@ -325,6 +386,34 @@ public class Game {
         fighter.itemHeal(new Item(POTION, "heal", 1));
         System.out.println(fighter.getName() + " healed to "
             + fighter.getHealth() + " HP.");
+        wildTurn();
+    }
+
+    // Uses an X Attack: raises your Pokemon's attack for good, then the
+    // wild Pokemon attacks
+    private void power()
+    {
+        if (!isInBattle())
+        {
+            System.out.println("You can only use an X Attack during a fight.");
+            return;
+        }
+        if (!player.useItem(X_ATTACK))
+        {
+            System.out.println("You're out of X Attacks!");
+            return;
+        }
+
+        // The bag already used one X Attack; itemBuff only needs its effect
+        fighter.itemBuff(new Item(X_ATTACK, "buff", 1));
+        System.out.println(fighter.getName() + "'s attack rose to "
+            + fighter.getAttack() + "!");
+        wildTurn();
+    }
+
+    // The wild Pokemon attacks back (if it is still standing)
+    private void wildTurn()
+    {
         battle.attack(wildPokemon, fighter);
         printBattleStatus();
         checkBattleOver();
@@ -345,8 +434,14 @@ public class Game {
 
     private void printBattleStatus()
     {
+        String boost = "";
+        if (battle.getBoostTurns(fighter) > 0)
+        {
+            boost = " (powered up: " + battle.getBoostTurns(fighter) + " left)";
+        }
         System.out.println(fighter.getName() + " HP: " + fighter.getHealth()
-            + " | " + wildPokemon.getName() + " HP: " + wildPokemon.getHealth());
+            + boost + " | " + wildPokemon.getName() + " HP: "
+            + wildPokemon.getHealth());
     }
 
     // Ends the battle if someone fainted, and ends the game if all of the
@@ -434,14 +529,15 @@ public class Game {
         }
         System.out.println("Poke Balls left: " + player.getItemAmount(POKE_BALL));
         System.out.println("Potions left: " + player.getItemAmount(POTION));
+        System.out.println("X Attacks left: " + player.getItemAmount(X_ATTACK));
     }
 
     private void printHelp()
     {
         if (isInBattle())
         {
-            System.out.println("Battle commands: attack, heal, catch, run, "
-                + "view, help, quit");
+            System.out.println("Battle commands: attack, special, buff, heal, "
+                + "power, catch, run, view, help, quit");
         }
         else
         {

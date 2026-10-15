@@ -97,6 +97,127 @@ public class BattleTest
         assertEquals(1, weakBattle.attack(weak, geodude));
     }
 
+    @Test
+    public void testConstructorRejectsSamePokemonTwice()
+    {
+        try
+        {
+            new Battle(pikachu, pikachu);
+            fail("Expected IllegalArgumentException");
+        }
+        catch (IllegalArgumentException e)
+        {
+
+        }
+    }
+
+    // ---------- specialAttack ----------
+
+    @Test
+    public void testSpecialAttackDoesDoubleDamage()
+    {
+        assertEquals(24, battle.specialAttack(pikachu, geodude));
+        assertEquals(16, geodude.getHealth());
+        assertTrue(battle.hasUsedSpecial(pikachu));
+        assertFalse(battle.hasUsedSpecial(geodude));
+    }
+
+    @Test
+    public void testSpecialAttackOnlyOnce()
+    {
+        battle.specialAttack(pikachu, geodude);
+        assertEquals(0, battle.specialAttack(pikachu, geodude));
+        assertEquals(16, geodude.getHealth());
+    }
+
+    @Test
+    public void testFaintedPokemonCannotSpecialAttack()
+    {
+        pikachu.takeDamage(100);
+        assertEquals(0, battle.specialAttack(pikachu, geodude));
+        assertFalse(battle.hasUsedSpecial(pikachu));
+    }
+
+    // ---------- boost ----------
+
+    @Test
+    public void testBoostRaisesDamage()
+    {
+        assertTrue(battle.boost(pikachu));
+        assertEquals(Battle.BOOST_TURNS, battle.getBoostTurns(pikachu));
+        assertEquals(18, battle.attack(pikachu, geodude));
+        assertEquals(Battle.BOOST_TURNS - 1, battle.getBoostTurns(pikachu));
+    }
+
+    @Test
+    public void testBoostWearsOff()
+    {
+        Pokemon tank = new Pokemon("common", "Snorlax", "Normal", 500, 10, 10);
+        Battle tankBattle = new Battle(pikachu, tank);
+        tankBattle.boost(pikachu);
+        for (int i = 0; i < Battle.BOOST_TURNS; i++)
+        {
+            assertEquals(18, tankBattle.attack(pikachu, tank));
+        }
+        assertEquals(0, tankBattle.getBoostTurns(pikachu));
+        assertEquals(13, tankBattle.attack(pikachu, tank));
+    }
+
+    @Test
+    public void testBoostCannotStack()
+    {
+        battle.boost(pikachu);
+        assertFalse(battle.boost(pikachu));
+        assertEquals(Battle.BOOST_TURNS, battle.getBoostTurns(pikachu));
+    }
+
+    @Test
+    public void testFaintedPokemonCannotBoost()
+    {
+        pikachu.takeDamage(100);
+        assertFalse(battle.boost(pikachu));
+        assertEquals(0, battle.getBoostTurns(pikachu));
+    }
+
+    @Test
+    public void testBoostPokemonNotInBattle()
+    {
+        Pokemon outsider = new Pokemon("common", "Pidgey", "Normal", 40, 45, 45);
+        try
+        {
+            battle.boost(outsider);
+            fail("Expected IllegalArgumentException");
+        }
+        catch (IllegalArgumentException e)
+        {
+
+        }
+    }
+
+    @Test
+    public void testLookupsRejectPokemonNotInBattle()
+    {
+        Pokemon outsider = new Pokemon("common", "Pidgey", "Normal", 40, 45, 45);
+        try
+        {
+            battle.getBoostTurns(outsider);
+            fail("Expected IllegalArgumentException");
+        }
+        catch (IllegalArgumentException e)
+        {
+
+        }
+        try
+        {
+            battle.hasUsedSpecial(null);
+            fail("Expected IllegalArgumentException");
+        }
+        catch (IllegalArgumentException e)
+        {
+
+        }
+    }
+
     // ---------- isOver ----------
 
     @Test

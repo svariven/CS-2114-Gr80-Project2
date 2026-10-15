@@ -13,8 +13,9 @@ How to Compile and Run
 Automatically is enabled under Project.
 4. Right-click Game.java and select Run As → Java Application.
 5. Use commands like explore, catch, view, fight <number> (number from
-view), help, and quit. During a fight: attack, heal (uses a Potion), catch,
-and run.
+view), help, and quit. During a fight: attack, special (once per fight),
+buff (attack boost for 3 attacks), heal (uses a Potion), power (uses an
+X Attack), catch, and run.
 
 How to Run Tests
 
@@ -123,7 +124,7 @@ ATTRIBUTION TABLE
 
 ## Big-O: Game and Battle
 
-p = number of Pokemon the player owns, b = number of item stacks in the bag (only Poke Balls and Potions, so b ≤ 2), t = number of commands typed.
+p = number of Pokemon the player owns, b = number of item stacks in the bag (only Poke Balls, Potions and X Attacks, so b ≤ 3), t = number of commands typed.
 
 | Method | Big-O | Spec estimate | Matches? |
 |---|---|---|---|
@@ -134,7 +135,8 @@ p = number of Pokemon the player owns, b = number of item stacks in the bag (onl
 | ↳ `catch` | O(b²) = O(1) | — | — |
 | ↳ `fight <n>` | O(p) (`getPokemon(n)`) | — | — |
 | ↳ `attack` | O(p²) (checks if all Pokemon fainted) | — | — |
-| ↳ `heal` | O(b² + p²) | — | — |
+| ↳ `special`, `buff` | O(p²) (checks if all Pokemon fainted) | — | — |
+| ↳ `heal`, `power` | O(b² + p²) | — | — |
 | ↳ `view` | O(p² + b²) | — | — |
 | ↳ `run`, `help`, `quit` | O(1) | — | — |
 | `getPlayer`, `getWildPokemon`, `getCurrentRoom`, `isInBattle`, `isGameOver` | O(1) | — | — |
@@ -142,5 +144,7 @@ p = number of Pokemon the player owns, b = number of item stacks in the bag (onl
 | `Battle.attack` | O(1) | O(1) | Yes |
 | `Battle.isOver` | O(1) | O(1) | Yes |
 | `Battle.runTurn` | O(1) | O(1) | Yes |
+| `Battle.specialAttack` | O(1) | not in spec | — |
+| `Battle.boost`, `getBoostTurns`, `hasUsedSpecial` | O(1) | not in spec | — |
 
 **Why O(p²)?** Looping over the collection with `getPokemon(i)` calls `LinkedChain.get(i)`, which walks i nodes, so 0 + 1 + … + (p−1) = O(p²). The spec assumed each command was cheap, but `view` and the game-over check both loop like this.
