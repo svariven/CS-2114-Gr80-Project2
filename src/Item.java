@@ -4,6 +4,10 @@ public class Item {
     private String effect;
     private int amount;
     
+    /**
+     * Creates an item with a name, effect, and amount
+     * Time Complexity: O(n), where n is the length of the name. 
+     */
     public Item(String name, String effect, int amount)
     {
         if (amount < 0)
@@ -21,21 +25,37 @@ public class Item {
         this.amount = amount;
     }
     
+    /**
+     * Returns the item's name
+     * Time Complexity: O(1)
+     */
     public String getName()
     {
         return name;
     }
     
+    /**
+     * Returns the item's effect
+     * Time Complexity: O(1)
+     */
     public String getEffect()
     {
         return effect;
     }
     
+    /**
+     * Returns the quantity of the item
+     * Time Complexity: O(1)
+     */
     public int getAmount()
     {
         return amount;
     }
     
+    /**
+     * Uses one item if the amount is greater than zero
+     * Time Complexity: O(1)
+     */
     public void use()
     {
         if (amount > 0)
@@ -44,6 +64,10 @@ public class Item {
         }
     }
 
+    /**
+     * Checks if two items have the same name.
+     * Time Complexity: O(n), where n is the length of the name. 
+     */
     @Override
     public boolean equals(Object obj)
     {
@@ -60,13 +84,21 @@ public class Item {
         Item other = (Item)obj;
         return name.equals(other.name);
     }
-    
+    /**
+     * Returns a hash code based on the item's name
+     * Time Complexity: O(n), where n is the length of the name
+     */
     @Override
     public int hashCode()
     {
         return name.hashCode();
     }
     
+    /**
+     * Returns a string describing the item's properties
+     * Time Complexity: O(n), where n is the total length of the name and 
+     * effect strings
+     */
     @Override
     public String toString() {
         return name + " (Effect: " + effect
