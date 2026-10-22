@@ -54,19 +54,64 @@ public class GameTest
         return output.toString();
     }
 
+    // Player 1 (Ash) explores and catches, which passes the turn to player 2
+    private void ashCatches()
+    {
+        game.processCommandString("explore");
+        game.processCommandString("catch");
+    }
+
     // ---------- constructor ----------
 
     @Test
     public void testStartsWithStarterAndFiveBalls()
     {
-        assertEquals(1, game.getPlayer().getPokemonCount());
-        assertEquals(5, game.getPlayer().getItemAmount(Game.POKE_BALL));
-        assertEquals(2, game.getPlayer().getItemAmount(Game.POTION));
-        assertEquals(1, game.getPlayer().getItemAmount(Game.X_ATTACK));
+        for (int number = 1; number <= 2; number++)
+        {
+            Player p = game.getPlayer(number);
+            assertEquals(1, p.getPokemonCount());
+            assertEquals(5, p.getItemAmount(Game.POKE_BALL));
+            assertEquals(2, p.getItemAmount(Game.POTION));
+            assertEquals(1, p.getItemAmount(Game.X_ATTACK));
+        }
         assertNull(game.getWildPokemon());
         assertNull(game.getCurrentRoom());
         assertFalse(game.isInBattle());
         assertFalse(game.isGameOver());
+        assertNull(game.getWinner());
+    }
+
+    @Test
+    public void testPlayersAreDifferentAndPlayerOneGoesFirst()
+    {
+        assertNotSame(game.getPlayer(1), game.getPlayer(2));
+        assertEquals("Ash", game.getPlayer(1).getName());
+        assertEquals("Misty", game.getPlayer(2).getName());
+        assertEquals(1, game.getCurrentPlayerNumber());
+        assertSame(game.getPlayer(1), game.getCurrentPlayer());
+    }
+
+    @Test
+    public void testGetPlayerRejectsBadNumber()
+    {
+        try
+        {
+            game.getPlayer(0);
+            fail("Expected IllegalArgumentException");
+        }
+        catch (IllegalArgumentException e)
+        {
+
+        }
+        try
+        {
+            game.getPlayer(3);
+            fail("Expected IllegalArgumentException");
+        }
+        catch (IllegalArgumentException e)
+        {
+
+        }
     }
 
     @Test
@@ -104,6 +149,13 @@ public class GameTest
     }
 
     @Test
+    public void testExploreDoesNotEndTurn()
+    {
+        game.processCommandString("explore");
+        assertEquals(1, game.getCurrentPlayerNumber());
+    }
+
+    @Test
     public void testCommandIgnoresCaseAndSpaces()
     {
         game.processCommandString("  EXPLORE  ");
@@ -116,6 +168,7 @@ public class GameTest
         game.processCommandString("explor");
         assertNull(game.getWildPokemon());
         assertTrue(out().contains("I don't know \"explor\". Type help for commands."));
+        assertEquals(1, game.getCurrentPlayerNumber());
     }
 
     // ---------- processCommandString: catch ----------
@@ -127,29 +180,41 @@ public class GameTest
         String name = game.getWildPokemon().getName();
         game.processCommandString("catch");
 
-        assertEquals(2, game.getPlayer().getPokemonCount());
-        assertEquals(4, game.getPlayer().getItemAmount(Game.POKE_BALL));
+        assertEquals(2, game.getPlayer(1).getPokemonCount());
+        assertEquals(4, game.getPlayer(1).getItemAmount(Game.POKE_BALL));
         assertNull(game.getWildPokemon());
         assertTrue(out().contains("You caught " + name + "!"));
+    }
+
+    @Test
+    public void testCatchEndsTurn()
+    {
+        ashCatches();
+        assertEquals(2, game.getCurrentPlayerNumber());
+        assertTrue(out().contains("--- Misty's turn ---"));
     }
 
     @Test
     public void testCatchWithNothingToCatch()
     {
         game.processCommandString("catch");
-        assertEquals(1, game.getPlayer().getPokemonCount());
-        assertEquals(5, game.getPlayer().getItemAmount(Game.POKE_BALL));
+        assertEquals(1, game.getPlayer(1).getPokemonCount());
+        assertEquals(5, game.getPlayer(1).getItemAmount(Game.POKE_BALL));
         assertTrue(out().contains("Catch what? Explore to find a Pokemon first."));
+        assertEquals(1, game.getCurrentPlayerNumber());
     }
 
     @Test
-    public void testCatchTwiceOnlyCatchesOnce()
+    public void testCatchTwiceDoesNotCatchForTheOtherPlayer()
     {
-        game.processCommandString("explore");
-        game.processCommandString("catch");
-        game.processCommandString("catch");
-        assertEquals(2, game.getPlayer().getPokemonCount());
-        assertEquals(4, game.getPlayer().getItemAmount(Game.POKE_BALL));
+        ashCatches();
+        game.processCommandString("catch");   // Misty has nothing to catch
+
+        assertEquals(2, game.getPlayer(1).getPokemonCount());
+        assertEquals(1, game.getPlayer(2).getPokemonCount());
+        assertEquals(4, game.getPlayer(1).getItemAmount(Game.POKE_BALL));
+        assertEquals(5, game.getPlayer(2).getItemAmount(Game.POKE_BALL));
+        assertEquals(2, game.getCurrentPlayerNumber());
     }
 
     @Test
@@ -157,17 +222,61 @@ public class GameTest
     {
         for (int i = 0; i < Game.STARTING_BALLS; i++)
         {
-            game.processCommandString("explore");
-            game.processCommandString("catch");
+            game.getPlayer(1).useItem(Game.POKE_BALL);
         }
-        assertEquals(6, game.getPlayer().getPokemonCount());
-        assertEquals(0, game.getPlayer().getItemAmount(Game.POKE_BALL));
 
         game.processCommandString("explore");
         game.processCommandString("catch");
-        assertEquals(6, game.getPlayer().getPokemonCount());
+        assertEquals(1, game.getPlayer(1).getPokemonCount());
         assertNotNull(game.getWildPokemon());
         assertTrue(out().contains("You're out of Poke Balls!"));
+        assertEquals(1, game.getCurrentPlayerNumber());
+    }
+
+    // ---------- two players: turns, bags and collections ----------
+
+    @Test
+    public void testPlayerTwoTakesTurnThenPlayerOne()
+    {
+        ashCatches();
+        game.processCommandString("explore");
+        game.processCommandString("catch");
+
+        assertEquals(2, game.getPlayer(2).getPokemonCount());
+        assertEquals(4, game.getPlayer(2).getItemAmount(Game.POKE_BALL));
+        assertEquals(1, game.getCurrentPlayerNumber());
+        assertTrue(out().contains("--- Ash's turn ---"));
+    }
+
+    @Test
+    public void testPlayersKeepSeparateBagsAndCollections()
+    {
+        ashCatches();
+        assertEquals(2, game.getPlayer(1).getPokemonCount());
+        assertEquals(1, game.getPlayer(2).getPokemonCount());
+        assertEquals(4, game.getPlayer(1).getItemAmount(Game.POKE_BALL));
+        assertEquals(5, game.getPlayer(2).getItemAmount(Game.POKE_BALL));
+    }
+
+    @Test
+    public void testEachPlayerHasTheirOwnRoom()
+    {
+        game.processCommandString("explore");
+        Room ashRoom = game.getCurrentRoom();
+        game.processCommandString("catch");
+
+        assertNull(game.getCurrentRoom());   // Misty has not explored yet
+        game.processCommandString("explore");
+        assertNotNull(game.getCurrentRoom());
+        assertNotNull(ashRoom);
+    }
+
+    @Test
+    public void testViewAndHelpDoNotEndTurn()
+    {
+        game.processCommandString("view");
+        game.processCommandString("help");
+        assertEquals(1, game.getCurrentPlayerNumber());
     }
 
     // ---------- processCommandString: view ----------
@@ -176,10 +285,29 @@ public class GameTest
     public void testViewShowsCollectionAndBalls()
     {
         game.processCommandString("view");
+        assertTrue(out().contains("Ash's Pokemon:"));
         assertTrue(out().contains("1. Pikachu (Type: Electric, HP: 35, Attack: 55)"));
         assertTrue(out().contains("Poke Balls left: 5"));
         assertTrue(out().contains("Potions left: 2"));
         assertTrue(out().contains("X Attacks left: 1"));
+    }
+
+    @Test
+    public void testViewShowsOpponentStanding()
+    {
+        game.processCommandString("view");
+        assertTrue(out().contains("Misty has 1 of 1 Pokemon standing."));
+    }
+
+    @Test
+    public void testViewShowsTheCurrentPlayersPokemon()
+    {
+        ashCatches();
+        output.reset();
+        game.processCommandString("view");   // Misty's turn now
+        assertTrue(out().contains("Misty's Pokemon:"));
+        assertTrue(out().contains("1. Charmander (Type: Fire, HP: 39, Attack: 52)"));
+        assertTrue(out().contains("Ash has 2 of 2 Pokemon standing."));
     }
 
     @Test
@@ -188,6 +316,10 @@ public class GameTest
         game.processCommandString("explore");
         String name = game.getWildPokemon().getName();
         game.processCommandString("catch");
+        // back to Ash after Misty takes a turn
+        game.processCommandString("explore");
+        game.processCommandString("catch");
+        output.reset();
         game.processCommandString("view");
         assertTrue(out().contains("1. " + name + " (Type: "));
         assertTrue(out().contains("2. Pikachu (Type: "));
@@ -204,10 +336,11 @@ public class GameTest
     }
 
     @Test
-    public void testQuitEndsGame()
+    public void testQuitEndsGameWithNoWinner()
     {
         game.processCommandString("quit");
         assertTrue(game.isGameOver());
+        assertNull(game.getWinner());
     }
 
     @Test
@@ -222,7 +355,7 @@ public class GameTest
 
     // ---------- processCommandString: fight ----------
 
-    // Finds a wild Pokemon and fights it with Pokemon number 1
+    // Finds a wild Pokemon and fights it with the current player's Pokemon 1
     private void startFight()
     {
         game.processCommandString("explore");
@@ -235,6 +368,15 @@ public class GameTest
         startFight();
         assertTrue(game.isInBattle());
         assertTrue(out().contains("Pikachu, I choose you!"));
+    }
+
+    @Test
+    public void testPlayerTwoFightsWithTheirOwnPokemon()
+    {
+        ashCatches();
+        startFight();
+        assertTrue(game.isInBattle());
+        assertTrue(out().contains("Charmander, I choose you!"));
     }
 
     @Test
@@ -270,7 +412,7 @@ public class GameTest
     @Test
     public void testFaintedPokemonCannotFight()
     {
-        game.getPlayer().getPokemon(0).takeDamage(100);
+        game.getPlayer(1).getPokemon(0).takeDamage(100);
         startFight();
         assertFalse(game.isInBattle());
         assertTrue(out().contains("You cannot fight with Pikachu. It has fainted."));
@@ -295,6 +437,73 @@ public class GameTest
         assertTrue(out().contains("You cannot explore during a fight."));
     }
 
+    // ---------- a fight is never interrupted by the other player ----------
+
+    @Test
+    public void testTurnStaysWithFighterThroughoutBattle()
+    {
+        startFight();
+        game.processCommandString("buff");
+        assertTrue(game.isInBattle());
+        assertEquals(1, game.getCurrentPlayerNumber());
+
+        game.processCommandString("heal");
+        assertTrue(game.isInBattle());
+        assertEquals(1, game.getCurrentPlayerNumber());
+
+        game.processCommandString("view");
+        assertEquals(1, game.getCurrentPlayerNumber());
+    }
+
+    @Test
+    public void testEveryAttackInAFightStaysWithSamePlayer()
+    {
+        startFight();
+        while (game.isInBattle())
+        {
+            assertEquals(1, game.getCurrentPlayerNumber());
+            game.processCommandString("attack");
+        }
+    }
+
+    @Test
+    public void testRunEndsFightAndPassesTurn()
+    {
+        startFight();
+        game.processCommandString("run");
+        assertFalse(game.isInBattle());
+        assertNull(game.getWildPokemon());
+        assertEquals(2, game.getCurrentPlayerNumber());
+        assertTrue(out().contains("You ran away from"));
+    }
+
+    @Test
+    public void testCatchDuringFightEndsItAndPassesTurn()
+    {
+        startFight();
+        game.processCommandString("catch");
+        assertFalse(game.isInBattle());
+        assertEquals(2, game.getPlayer(1).getPokemonCount());
+        assertEquals(2, game.getCurrentPlayerNumber());
+    }
+
+    @Test
+    public void testWinningFightPassesTurn()
+    {
+        game.processCommandString("explore");
+        Pokemon wild = game.getWildPokemon();
+        wild.takeDamage(wild.getHealth() - 1);
+        game.processCommandString("fight 1");
+        game.processCommandString("attack");
+
+        assertTrue(wild.isFainted());
+        assertFalse(game.isInBattle());
+        assertNull(game.getWildPokemon());
+        assertEquals(2, game.getCurrentPlayerNumber());
+        assertFalse(game.isGameOver());
+        assertTrue(out().contains("fainted! You won."));
+    }
+
     // ---------- processCommandString: attack ----------
 
     @Test
@@ -306,7 +515,7 @@ public class GameTest
         game.processCommandString("attack");
 
         assertEquals(wildHp - 55 / Battle.DAMAGE_DIVISOR, wild.getHealth());
-        assertTrue(game.getPlayer().getPokemon(0).getHealth() < 35);
+        assertTrue(game.getPlayer(1).getPokemon(0).getHealth() < 35);
         assertTrue(game.isInBattle());
     }
 
@@ -327,46 +536,84 @@ public class GameTest
         }
 
         assertFalse(game.isInBattle());
-        if (game.getPlayer().getPokemon(0).isFainted())
+        if (game.getPlayer(1).getPokemon(0).isFainted())
         {
+            // Ash only had one Pokemon, so Misty wins
             assertTrue(game.isGameOver());
+            assertSame(game.getPlayer(2), game.getWinner());
         }
         else
         {
             assertNull(game.getWildPokemon());
+            assertFalse(game.isGameOver());
+            assertEquals(2, game.getCurrentPlayerNumber());
             assertTrue(out().contains("fainted! You won."));
         }
     }
 
+    // ---------- losing: end of the game ----------
+
     @Test
-    public void testGameOverWhenAllPokemonFaint()
+    public void testPlayerTwoWinsWhenPlayerOneRunsOutOfPokemon()
     {
-        game.getPlayer().getPokemon(0).takeDamage(34);
+        game.getPlayer(1).getPokemon(0).takeDamage(34);
         startFight();
         game.processCommandString("attack");
 
-        assertTrue(game.getPlayer().getPokemon(0).isFainted());
+        assertTrue(game.getPlayer(1).getPokemon(0).isFainted());
         assertFalse(game.isInBattle());
         assertTrue(game.isGameOver());
-        assertTrue(out().contains("All your Pokemon have fainted. Game over!"));
+        assertSame(game.getPlayer(2), game.getWinner());
+        assertTrue(out().contains("All of Ash's Pokemon have fainted. Misty wins!"));
     }
 
     @Test
-    public void testFaintedWithOthersLeftKeepsGoing()
+    public void testPlayerOneWinsWhenPlayerTwoRunsOutOfPokemon()
     {
-        Pokemon pikachu = game.getPlayer().getPokemon(0);
-        game.processCommandString("explore");
+        ashCatches();
+        game.getPlayer(2).getPokemon(0).takeDamage(38);   // 1 HP left
+        startFight();
+        game.processCommandString("attack");
+
+        assertTrue(game.getPlayer(2).getPokemon(0).isFainted());
+        assertTrue(game.isGameOver());
+        assertSame(game.getPlayer(1), game.getWinner());
+        assertTrue(out().contains("All of Misty's Pokemon have fainted. Ash wins!"));
+    }
+
+    @Test
+    public void testFaintedWithOthersLeftKeepsGoingAndPassesTurn()
+    {
+        Pokemon pikachu = game.getPlayer(1).getPokemon(0);
+        ashCatches();
+        game.processCommandString("explore");   // Misty
         game.processCommandString("catch");
         pikachu.takeDamage(34);
 
-        game.processCommandString("explore");
-        game.processCommandString("fight 2");
+        game.processCommandString("explore");   // Ash again
+        game.processCommandString("fight 2");   // the wounded Pikachu
         game.processCommandString("attack");
 
         assertTrue(pikachu.isFainted());
         assertFalse(game.isGameOver());
-        assertNotNull(game.getWildPokemon());
-        assertTrue(out().contains("Pick another Pokemon"));
+        assertNull(game.getWinner());
+        assertFalse(game.isInBattle());
+        assertNull(game.getWildPokemon());
+        assertEquals(2, game.getCurrentPlayerNumber());
+        assertTrue(out().contains("You lost the fight."));
+    }
+
+    @Test
+    public void testNoCommandsWorkAfterGameOver()
+    {
+        game.getPlayer(1).getPokemon(0).takeDamage(34);
+        startFight();
+        game.processCommandString("attack");
+        assertTrue(game.isGameOver());
+
+        game.processCommandString("explore");
+        assertNull(game.getWildPokemon());
+        assertTrue(out().contains("The game is over."));
     }
 
     // ---------- processCommandString: heal ----------
@@ -376,7 +623,8 @@ public class GameTest
     {
         startFight();
         game.processCommandString("heal");
-        assertEquals(1, game.getPlayer().getItemAmount(Game.POTION));
+        assertEquals(1, game.getPlayer(1).getItemAmount(Game.POTION));
+        assertEquals(2, game.getPlayer(2).getItemAmount(Game.POTION));
         assertTrue(out().contains("Pikachu healed to 65 HP."));
     }
 
@@ -387,7 +635,7 @@ public class GameTest
         game.processCommandString("heal");
         game.processCommandString("heal");
         game.processCommandString("heal");
-        assertEquals(0, game.getPlayer().getItemAmount(Game.POTION));
+        assertEquals(0, game.getPlayer(1).getItemAmount(Game.POTION));
         assertTrue(out().contains("You're out of Potions!"));
     }
 
@@ -395,7 +643,7 @@ public class GameTest
     public void testHealOutsideFight()
     {
         game.processCommandString("heal");
-        assertEquals(2, game.getPlayer().getItemAmount(Game.POTION));
+        assertEquals(2, game.getPlayer(1).getItemAmount(Game.POTION));
         assertTrue(out().contains("You can only heal during a fight."));
     }
 
@@ -474,8 +722,9 @@ public class GameTest
     {
         startFight();
         game.processCommandString("power");
-        assertEquals(0, game.getPlayer().getItemAmount(Game.X_ATTACK));
-        assertEquals(70, game.getPlayer().getPokemon(0).getAttack());
+        assertEquals(0, game.getPlayer(1).getItemAmount(Game.X_ATTACK));
+        assertEquals(1, game.getPlayer(2).getItemAmount(Game.X_ATTACK));
+        assertEquals(70, game.getPlayer(1).getPokemon(0).getAttack());
         assertTrue(out().contains("Pikachu's attack rose to 70!"));
     }
 
@@ -485,7 +734,7 @@ public class GameTest
         startFight();
         game.processCommandString("power");
         game.processCommandString("power");
-        assertEquals(70, game.getPlayer().getPokemon(0).getAttack());
+        assertEquals(70, game.getPlayer(1).getPokemon(0).getAttack());
         assertTrue(out().contains("You're out of X Attacks!"));
     }
 
@@ -493,36 +742,18 @@ public class GameTest
     public void testPowerOutsideFight()
     {
         game.processCommandString("power");
-        assertEquals(1, game.getPlayer().getItemAmount(Game.X_ATTACK));
+        assertEquals(1, game.getPlayer(1).getItemAmount(Game.X_ATTACK));
         assertTrue(out().contains("You can only use an X Attack during a fight."));
     }
 
-    // ---------- processCommandString: run, catch during a fight ----------
-
-    @Test
-    public void testRunEndsFight()
-    {
-        startFight();
-        game.processCommandString("run");
-        assertFalse(game.isInBattle());
-        assertNull(game.getWildPokemon());
-        assertTrue(out().contains("You ran away from"));
-    }
+    // ---------- processCommandString: run ----------
 
     @Test
     public void testRunOutsideFight()
     {
         game.processCommandString("run");
         assertTrue(out().contains("Run from what? You are not in a fight."));
-    }
-
-    @Test
-    public void testCatchDuringFightEndsIt()
-    {
-        startFight();
-        game.processCommandString("catch");
-        assertFalse(game.isInBattle());
-        assertEquals(2, game.getPlayer().getPokemonCount());
+        assertEquals(1, game.getCurrentPlayerNumber());
     }
 
     @Test
@@ -541,7 +772,10 @@ public class GameTest
         Game played = makeGame("explore\ncatch\nview\nquit\n");
         played.run();
         assertTrue(out().contains("Welcome to PokeQuest!"));
-        assertEquals(2, played.getPlayer().getPokemonCount());
+        assertTrue(out().contains("--- Ash's turn ---"));
+        assertTrue(out().contains("Ash> "));
+        assertTrue(out().contains("Misty> "));
+        assertEquals(2, played.getPlayer(1).getPokemonCount());
         assertTrue(played.isGameOver());
         assertTrue(out().contains("Thanks for playing!"));
     }
@@ -562,5 +796,18 @@ public class GameTest
         Game played = makeGame("quit\nexplore\n");
         played.run();
         assertNull(played.getWildPokemon());
+    }
+
+    @Test
+    public void testRunStopsWhenAPlayerLoses()
+    {
+        Game played = makeGame("explore\nfight 1\nattack\nattack\nattack\n"
+            + "attack\nattack\nattack\nattack\nattack\nattack\nattack\n"
+            + "attack\nattack\nattack\nattack\nattack\nattack\nattack\n");
+        played.getPlayer(1).getPokemon(0).takeDamage(34);
+        played.run();
+        assertTrue(played.isGameOver());
+        assertSame(played.getPlayer(2), played.getWinner());
+        assertTrue(out().contains("Misty wins!"));
     }
 }

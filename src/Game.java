@@ -16,9 +16,14 @@ import java.util.Random;
 import java.util.Scanner;
 
 /**
- * Runs the PokeQuest main loop: reads commands from the user and calls the
- * Player, Pokemon, Room and Battle classes. The game is either exploring
- * (battle is null) or in a battle (battle is not null).
+ * Runs the two-player PokeQuest main loop: reads commands from the user and
+ * calls the Player, Pokemon, Room and Battle classes. Players take turns.
+ * A turn is one whole encounter: the player explores, then either catches
+ * the wild Pokemon or fights it, and the turn only passes to the other
+ * player once the encounter is over (caught, won, lost or ran away). The
+ * game is either exploring (battle is null) or in a battle (battle is not
+ * null). The game ends when one player's Pokemon have all fainted; the
+ * other player wins.
  *
  * Time complexities below use p = number of Pokemon the player owns,
  * b = number of item stacks in the bag (at most 3: Poke Balls, Potions and
@@ -46,9 +51,17 @@ public class Game {
     private static final int[] WILD_HP = {45, 39, 44, 40, 30, 40};
     private static final int[] WILD_ATTACK = {49, 52, 48, 45, 56, 80};
 
-    private Player player;
+    private static final int PLAYER_COUNT = 2;
+
+    // The two players, and the index (0 or 1) of the one whose turn it is
+    private Player[] players;
+    private int current;
+    private Player winner;
     private LinkedChain<Room> rooms;
-    private Room currentRoom;
+    // The room each player is standing in (null until they first explore)
+    private Room[] currentRooms;
+    // Only the current player ever has a wild Pokemon; it is cleared when
+    // the turn ends
     private Pokemon wildPokemon;
     private Pokemon fighter;
     private Battle battle;
@@ -66,8 +79,9 @@ public class Game {
     }
 
     /**
-     * Sets up the player, starter Pokemon, bag and map.
-     * Time Complexity: O(1), a fixed number of adds (3 items, 3 rooms)
+     * Sets up both players (each with a starter Pokemon and a bag) and the
+     * map. Player 1 (Ash) goes first.
+     * Time Complexity: O(1), a fixed number of adds (6 items, 3 rooms)
      *
      * @param input where commands are read from
      * @param random used to pick rooms and wild Pokemon
@@ -82,18 +96,28 @@ public class Game {
 
         this.input = input;
         this.random = random;
-        player = new Player("Ash");
-        player.addPokemon(new Pokemon("common", "Pikachu", "Electric", 35, 55, 50));
-        player.addItem(new Item(POKE_BALL, "catch", STARTING_BALLS));
-        player.addItem(new Item(POTION, "heal", STARTING_POTIONS));
-        player.addItem(new Item(X_ATTACK, "buff", STARTING_X_ATTACKS));
+        players = new Player[PLAYER_COUNT];
+        players[0] = new Player("Ash");
+        players[0].addPokemon(
+            new Pokemon("common", "Pikachu", "Electric", 35, 55, 50));
+        players[1] = new Player("Misty");
+        players[1].addPokemon(
+            new Pokemon("common", "Charmander", "Fire", 39, 52, 52));
+        for (int i = 0; i < PLAYER_COUNT; i++)
+        {
+            players[i].addItem(new Item(POKE_BALL, "catch", STARTING_BALLS));
+            players[i].addItem(new Item(POTION, "heal", STARTING_POTIONS));
+            players[i].addItem(new Item(X_ATTACK, "buff", STARTING_X_ATTACKS));
+        }
+        current = 0;
+        winner = null;
 
         rooms = new LinkedChain<Room>();
         rooms.add(new Room("Forest", "Tall trees block out most of the sun."));
         rooms.add(new Room("Cave", "It is dark and you hear rocks falling."));
         rooms.add(new Room("Lake", "Water splashes against the shore."));
 
-        currentRoom = null;
+        currentRooms = new Room[PLAYER_COUNT];
         wildPokemon = null;
         fighter = null;
         battle = null;
@@ -119,10 +143,11 @@ public class Game {
     {
         System.out.println("Welcome to PokeQuest!");
         printHelp();
+        announceTurn();
 
         while (!gameOver && input.hasNextLine())
         {
-            System.out.print("> ");
+            System.out.print(getCurrentPlayer().getName() + "> ");
             processCommandString(input.nextLine());
         }
 
@@ -130,7 +155,9 @@ public class Game {
     }
 
     /**
-     * Runs one command. Bad commands print a message and never crash.
+     * Runs one command for the current player. Bad commands print a message
+     * and never crash. Commands that finish an encounter (catch, run, or the
+     * end of a fight) also pass the turn to the other player.
      * Time Complexity: O(p^2) worst case. Matching the command word is
      * O(1) (a fixed number of if/else checks; the spec estimated O(n) for
      * searching a command list). The work after that depends on the
@@ -145,6 +172,11 @@ public class Game {
         if (command == null || command.trim().isEmpty())
         {
             System.out.println("What do you want to do? Type help for commands.");
+            return;
+        }
+        if (gameOver)
+        {
+            System.out.println("The game is over.");
             return;
         }
 
@@ -212,12 +244,46 @@ public class Game {
     }
 
     /**
-     * Returns the player.
+     * Returns one of the two players.
+     * Time Complexity: O(1)
+     *
+     * @param number 1 or 2
+     * @throws IllegalArgumentException if number is not 1 or 2
+     */
+    public Player getPlayer(int number)
+    {
+        if (number < 1 || number > PLAYER_COUNT)
+        {
+            throw new IllegalArgumentException("Player number must be 1 or 2");
+        }
+        return players[number - 1];
+    }
+
+    /**
+     * Returns the player whose turn it is.
      * Time Complexity: O(1)
      */
-    public Player getPlayer()
+    public Player getCurrentPlayer()
     {
-        return player;
+        return players[current];
+    }
+
+    /**
+     * Returns the number (1 or 2) of the player whose turn it is.
+     * Time Complexity: O(1)
+     */
+    public int getCurrentPlayerNumber()
+    {
+        return current + 1;
+    }
+
+    /**
+     * Returns the winner, or null if the game is still going or was quit.
+     * Time Complexity: O(1)
+     */
+    public Player getWinner()
+    {
+        return winner;
     }
 
     /**
@@ -230,12 +296,13 @@ public class Game {
     }
 
     /**
-     * Returns the room the player is in, or null before the first explore.
+     * Returns the room the current player is in, or null if they have not
+     * explored yet.
      * Time Complexity: O(1)
      */
     public Room getCurrentRoom()
     {
-        return currentRoom;
+        return currentRooms[current];
     }
 
     /**
@@ -267,9 +334,10 @@ public class Game {
             return;
         }
 
-        currentRoom = rooms.get(random.nextInt(rooms.size()));
-        System.out.println("You walk into the " + currentRoom.getName() + ". "
-            + currentRoom.getDescription());
+        Room room = rooms.get(random.nextInt(rooms.size()));
+        currentRooms[current] = room;
+        System.out.println("You walk into the " + room.getName() + ". "
+            + room.getDescription());
 
         int i = random.nextInt(WILD_NAMES.length);
         wildPokemon = new Pokemon("common", WILD_NAMES[i], WILD_TYPES[i],
@@ -279,7 +347,8 @@ public class Game {
     }
 
     // Uses one Poke Ball and adds the wild Pokemon to the collection.
-    // Works while exploring or during a fight (it ends the fight).
+    // Works while exploring or during a fight (it ends the fight). Catching
+    // ends the turn.
     // Time Complexity: O(b^2): useItem searches the bag with get(i)
     private void catchPokemon()
     {
@@ -289,16 +358,15 @@ public class Game {
             return;
         }
 
-        if (!player.useItem(POKE_BALL))
+        if (!getCurrentPlayer().useItem(POKE_BALL))
         {
             System.out.println("You're out of Poke Balls!");
             return;
         }
 
-        player.addPokemon(wildPokemon);
+        getCurrentPlayer().addPokemon(wildPokemon);
         System.out.println("You caught " + wildPokemon.getName() + "!");
-        wildPokemon = null;
-        endBattle();
+        endTurn();
     }
 
     // Starts a battle between the chosen Pokemon (number from view) and
@@ -414,7 +482,7 @@ public class Game {
             System.out.println("You can only heal during a fight.");
             return;
         }
-        if (!player.useItem(POTION))
+        if (!getCurrentPlayer().useItem(POTION))
         {
             System.out.println("You're out of Potions!");
             return;
@@ -437,7 +505,7 @@ public class Game {
             System.out.println("You can only use an X Attack during a fight.");
             return;
         }
-        if (!player.useItem(X_ATTACK))
+        if (!getCurrentPlayer().useItem(X_ATTACK))
         {
             System.out.println("You're out of X Attacks!");
             return;
@@ -469,8 +537,7 @@ public class Game {
         }
 
         System.out.println("You ran away from " + wildPokemon.getName() + ".");
-        wildPokemon = null;
-        endBattle();
+        endTurn();
     }
 
     // Time Complexity: O(1)
@@ -486,53 +553,81 @@ public class Game {
             + wildPokemon.getHealth());
     }
 
-    // Ends the battle if someone fainted, and ends the game if all of the
-    // player's Pokemon have fainted
-    // Time Complexity: O(p^2): allFainted
+    // Ends the encounter if someone fainted. A won or lost fight passes the
+    // turn; if the fight was lost and all of the current player's Pokemon
+    // have fainted, the game ends and the other player wins.
+    // Time Complexity: O(p^2): countStanding
     private void checkBattleOver()
     {
         if (wildPokemon.isFainted())
         {
             System.out.println(wildPokemon.getName() + " fainted! You won.");
-            wildPokemon = null;
-            endBattle();
+            endTurn();
         }
         else if (fighter.isFainted())
         {
             System.out.println(fighter.getName() + " fainted!");
-            endBattle();
 
-            if (allFainted())
+            if (countStanding(getCurrentPlayer()) == 0)
             {
-                System.out.println("All your Pokemon have fainted. Game over!");
-                gameOver = true;
+                finishGame();
             }
             else
             {
-                System.out.println("Pick another Pokemon with fight and a "
-                    + "number, or run.");
+                System.out.println("You lost the fight.");
+                endTurn();
             }
         }
     }
 
+    // The current player has no Pokemon left, so the other player wins
     // Time Complexity: O(1)
-    private void endBattle()
+    private void finishGame()
     {
+        winner = players[1 - current];
+        gameOver = true;
+        clearEncounter();
+        System.out.println("All of " + getCurrentPlayer().getName()
+            + "'s Pokemon have fainted. " + winner.getName() + " wins!");
+    }
+
+    // Clears the wild Pokemon and any fight, then hands the turn to the
+    // other player
+    // Time Complexity: O(1)
+    private void endTurn()
+    {
+        clearEncounter();
+        current = 1 - current;
+        announceTurn();
+    }
+
+    // Time Complexity: O(1)
+    private void announceTurn()
+    {
+        System.out.println("--- " + getCurrentPlayer().getName() + "'s turn ---");
+    }
+
+    // Time Complexity: O(1)
+    private void clearEncounter()
+    {
+        wildPokemon = null;
         battle = null;
         fighter = null;
     }
 
+    // How many of the player's Pokemon have not fainted
     // Time Complexity: O(p^2), getPokemon(i) walks the chain each time
-    private boolean allFainted()
+    private int countStanding(Player who)
     {
-        for (int i = 0; i < player.getPokemonCount(); i++)
+        int standing = 0;
+        for (int i = 0; i < who.getPokemonCount(); i++)
         {
-            if (!player.getPokemon(i).isFainted())
+            if (!who.getPokemon(i).isFainted())
             {
-                return false;
+                standing++;
             }
         }
-        return true;
+        return standing;
     }
 
     // Turns "1", "2", ... into a Pokemon, or null if it is not a valid number
@@ -549,21 +644,25 @@ public class Game {
             return null;
         }
 
-        if (number < 1 || number > player.getPokemonCount())
+        if (number < 1 || number > getCurrentPlayer().getPokemonCount())
         {
             return null;
         }
-        return player.getPokemon(number - 1);
+        return getCurrentPlayer().getPokemon(number - 1);
     }
 
-    // Shows the player's numbered Pokemon and what is left in the bag
+    // Shows the current player's numbered Pokemon and bag, and how many of
+    // the opponent's Pokemon are still standing
     // Time Complexity: O(p^2 + b^2): getPokemon(i) in a loop, then getItemAmount
     private void view()
     {
-        System.out.println("Your Pokemon:");
-        for (int i = 0; i < player.getPokemonCount(); i++)
+        Player me = getCurrentPlayer();
+        Player opponent = players[1 - current];
+
+        System.out.println(me.getName() + "'s Pokemon:");
+        for (int i = 0; i < me.getPokemonCount(); i++)
         {
-            Pokemon p = player.getPokemon(i);
+            Pokemon p = me.getPokemon(i);
             String status = "";
             if (p.isFainted())
             {
@@ -573,9 +672,12 @@ public class Game {
                 + p.getType() + ", HP: " + p.getHealth() + ", Attack: "
                 + p.getAttack() + ")" + status);
         }
-        System.out.println("Poke Balls left: " + player.getItemAmount(POKE_BALL));
-        System.out.println("Potions left: " + player.getItemAmount(POTION));
-        System.out.println("X Attacks left: " + player.getItemAmount(X_ATTACK));
+        System.out.println("Poke Balls left: " + me.getItemAmount(POKE_BALL));
+        System.out.println("Potions left: " + me.getItemAmount(POTION));
+        System.out.println("X Attacks left: " + me.getItemAmount(X_ATTACK));
+        System.out.println(opponent.getName() + " has "
+            + countStanding(opponent) + " of " + opponent.getPokemonCount()
+            + " Pokemon standing.");
     }
 
     // Time Complexity: O(1)
@@ -590,6 +692,8 @@ public class Game {
         {
             System.out.println("Commands: explore, catch, view, fight <number>, "
                 + "help, quit");
+            System.out.println("Your turn ends when you catch, win, lose or "
+                + "run from a wild Pokemon.");
         }
     }
 }
