@@ -39,6 +39,8 @@ public class Game {
     public static final int STARTING_BALLS = 5;
     public static final int STARTING_POTIONS = 2;
     public static final int STARTING_X_ATTACKS = 1;
+    // A wild Pokemon can only be caught once its HP is below this
+    public static final int CATCH_HP_THRESHOLD = 20;
 
     private static final String BATTLE_HINT =
         "Type attack, special, buff, heal, power, catch or run.";
@@ -347,14 +349,23 @@ public class Game {
     }
 
     // Uses one Poke Ball and adds the wild Pokemon to the collection.
-    // Works while exploring or during a fight (it ends the fight). Catching
-    // ends the turn.
+    // Works while exploring or during a fight (it ends the fight), but only
+    // if the wild Pokemon's HP is below CATCH_HP_THRESHOLD; a refused catch
+    // uses no Poke Ball and does not end the turn. Catching ends the turn.
     // Time Complexity: O(b^2): useItem searches the bag with get(i)
     private void catchPokemon()
     {
         if (wildPokemon == null)
         {
             System.out.println("Catch what? Explore to find a Pokemon first.");
+            return;
+        }
+
+        if (wildPokemon.getHealth() >= CATCH_HP_THRESHOLD)
+        {
+            System.out.println(wildPokemon.getName() + " is too healthy to "
+                + "catch (HP: " + wildPokemon.getHealth() + "). Weaken it "
+                + "below " + CATCH_HP_THRESHOLD + " HP first.");
             return;
         }
 
